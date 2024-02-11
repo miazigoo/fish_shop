@@ -68,7 +68,7 @@ def get_cart_menu():
     return builder.as_markup()
 
 
-def del_cart_item(cart_products):
+def get_cart_item_for_del(cart_products):
     builder = InlineKeyboardBuilder()
     for _, item in enumerate(cart_products):
         product = item['attributes']['product']['data']['attributes']
@@ -87,7 +87,7 @@ def get_to_menu():
     return builder.as_markup()
 
 
-def get_menu():
+def get_keyboard_menu_cart():
     builder = InlineKeyboardBuilder()
     builder.button(text='🧺Моя корзина', callback_data='cart')
     builder.button(text='🔙В меню', callback_data='to_start')

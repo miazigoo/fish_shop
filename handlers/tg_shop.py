@@ -8,7 +8,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, URLInputFile
 
 from keyboards.tg_keyboards import get_start_menu, get_menu_buttons, get_quantity, NumbersCallbackFactory, \
-    get_cart_menu, del_cart_item, get_to_menu, get_menu, get_keyboard_yes_no
+    get_cart_menu, get_cart_item_for_del, get_to_menu, get_keyboard_menu_cart, get_keyboard_yes_no
 from shop import get_product, get_product_image, put_product_in_cart, show_cart, get_cart_product, \
     update_product_in_cart, delete_cart_products, create_customer, get_cart, update_cart
 
@@ -82,7 +82,7 @@ async def handle_add_to_cart(
             put_product_in_cart(base_url, int(product_id), quantity, str(tg_id))
         await callback.message.edit_text(
             f"Товар добавлен в корзину",
-            reply_markup=get_menu())
+            reply_markup=get_keyboard_menu_cart())
 
         await callback.answer()
 
@@ -157,7 +157,7 @@ async def handle_del_cart_item(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
     cart_products = DATA.get(f"cart_products_{tg_id}")
     await callback.message.edit_text('Выберите товар, который нужно удалить из корзины:',
-                                     reply_markup=del_cart_item(cart_products))
+                                     reply_markup=get_cart_item_for_del(cart_products))
     await callback.answer()
 
 

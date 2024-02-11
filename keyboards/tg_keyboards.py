@@ -10,10 +10,8 @@ class NumbersCallbackFactory(CallbackData, prefix="quantity"):
     value: Optional[int] = None
 
 
-def get_menu_buttons(redis_connect):
+def get_menu_buttons(products):
     builder = InlineKeyboardBuilder()
-    base_url = redis_connect.get('base_url').decode('utf-8')
-    products = get_products(base_url)
     for key, product in enumerate(products['data']):
         builder.button(
             text=product['attributes']['title'],

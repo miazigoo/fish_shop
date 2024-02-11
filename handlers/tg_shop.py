@@ -22,14 +22,14 @@ class Customer(StatesGroup):
 
 
 @router.callback_query(F.data == "to_start")
-async def start_menu(callback: types.CallbackQuery, redis_connect):
+async def start_menu(callback: types.CallbackQuery, products):
     try:
         await callback.message.edit_text("Добро пожаловать в магазин рыбы!🐠🐡🐟",
-                                         reply_markup=get_menu_buttons(redis_connect))
+                                         reply_markup=get_menu_buttons(products))
     except TelegramBadRequest:
         await callback.message.delete()
         await callback.message.answer("Добро пожаловать в магазин рыбы!🐠🐡🐟",
-                                      reply_markup=get_menu_buttons(redis_connect))
+                                      reply_markup=get_menu_buttons(products))
     await callback.answer()
 
 

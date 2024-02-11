@@ -1,7 +1,5 @@
 import requests
 
-# base_url = 'http://localhost:1337'
-
 
 def get_products(base_url):
     response = requests.get(f'{base_url}/api/products')

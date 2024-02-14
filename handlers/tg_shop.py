@@ -1,3 +1,4 @@
+import json
 from contextlib import suppress
 
 from aiogram import F, Router, types
@@ -13,8 +14,6 @@ from shop import get_product, get_product_image, put_product_in_cart, show_cart,
     update_product_in_cart, delete_cart_products, create_customer, get_cart, update_cart
 
 router = Router()
-
-DATA = {}
 
 
 class Customer(StatesGroup):
@@ -37,10 +36,10 @@ async def start_menu(callback: types.CallbackQuery, products):
 async def handle_description(
         callback: types.CallbackQuery,
         callback_data: NumbersCallbackFactory,
-        redis_connect
+        redis_connect,
+        base_url
 ):
     if callback_data.action == "product_id":
-        base_url = redis_connect.get('base_url').decode('utf-8')
         product_id = callback_data.value
         product = get_product(base_url, product_id)['attributes']
         redis_connect.set(f'product_id_{callback.from_user.id}', product_id)
@@ -62,9 +61,9 @@ async def handle_description(
 async def handle_add_to_cart(
         callback: types.CallbackQuery,
         callback_data: NumbersCallbackFactory,
-        redis_connect
+        redis_connect,
+        base_url
 ):
-    base_url = redis_connect.get('base_url').decode('utf-8')
     if callback_data.action == "add":
         tg_id = callback.from_user.id
         quantity = int(redis_connect.get(f'quantity_{tg_id}').decode('utf-8'))
@@ -124,8 +123,7 @@ async def handle_cart(callback: types.CallbackQuery, redis_connect):
 
 
 @router.callback_query(F.data == "cart")
-async def handle_cart(callback: types.CallbackQuery, redis_connect):
-    base_url = redis_connect.get('base_url').decode('utf-8')
+async def handle_cart(callback: types.CallbackQuery, redis_connect, base_url):
     tg_id = callback.from_user.id
     cart = show_cart(base_url, f'{tg_id}')
     cart_products = []
@@ -144,7 +142,7 @@ async def handle_cart(callback: types.CallbackQuery, redis_connect):
         message += f"Итого ₽ {cost}\n\n"
 
     message += f"Общая стоимость: ₽{total}"
-    DATA[f"cart_products_{tg_id}"] = cart_products
+    redis_connect.set(f"cart_products_{tg_id}", json.dumps(cart_products))
 
     await callback.message.edit_text(message,
                                      reply_markup=get_cart_menu(),
@@ -153,9 +151,9 @@ async def handle_cart(callback: types.CallbackQuery, redis_connect):
 
 
 @router.callback_query(F.data == "del_product")
-async def handle_del_cart_item(callback: types.CallbackQuery):
+async def handle_del_cart_item(callback: types.CallbackQuery, redis_connect):
     tg_id = callback.from_user.id
-    cart_products = DATA.get(f"cart_products_{tg_id}")
+    cart_products = json.loads(redis_connect.get(f"cart_products_{tg_id}").decode('utf-8'))
     await callback.message.edit_text('Выберите товар, который нужно удалить из корзины:',
                                      reply_markup=get_cart_item_for_del(cart_products))
     await callback.answer()
@@ -165,9 +163,8 @@ async def handle_del_cart_item(callback: types.CallbackQuery):
 async def handle_select_quantity(
         callback: types.CallbackQuery,
         callback_data: NumbersCallbackFactory,
-        redis_connect
+        base_url
 ):
-    base_url = redis_connect.get('base_url').decode('utf-8')
     if callback_data.action == "del_item":
         cart_product_id = callback_data.value
         delete_cart_products(base_url, cart_product_id)
@@ -178,10 +175,9 @@ async def handle_select_quantity(
 
 
 @router.callback_query(F.data == "del_all_product_in_cart")
-async def handle_select_quantity(callback: types.CallbackQuery, redis_connect):
-    base_url = redis_connect.get('base_url').decode('utf-8')
+async def handle_select_quantity(callback: types.CallbackQuery, redis_connect, base_url):
     tg_id = callback.from_user.id
-    cart_products = DATA.get(f"cart_products_{tg_id}")
+    cart_products = json.loads(redis_connect.get(f"cart_products_{tg_id}").decode('utf-8'))
     for _, item in enumerate(cart_products):
         cart_product_id = item['id']
         delete_cart_products(base_url, cart_product_id)
@@ -219,9 +215,9 @@ async def handle_select_quantity(
         callback: types.CallbackQuery,
         callback_data: NumbersCallbackFactory,
         state: FSMContext,
-        redis_connect
+        redis_connect,
+        base_url
 ):
-    base_url = redis_connect.get('base_url').decode('utf-8')
     tg_id = callback.from_user.id
     if callback_data.action == "select_yes_no":
         value = callback_data.value

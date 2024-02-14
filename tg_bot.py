@@ -19,7 +19,6 @@ async def main():
     )
     load_dotenv()
     base_url = os.getenv('BASE_URL')
-    redis_connection.set('base_url', base_url)
 
     products = get_products(base_url)
 

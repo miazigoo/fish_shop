@@ -1,13 +1,17 @@
 import logging
 import os
+import asyncio
+
+import redis
+from redis.backoff import ConstantBackoff
+from redis.exceptions import NoPermissionError
+from redis.retry import Retry
 
 from aiogram import Bot, Dispatcher
-import asyncio
 from aiogram.fsm.storage.memory import MemoryStorage
 from dotenv import load_dotenv
 
 from handlers import tg_common, tg_shop
-from redis_connection import redis_connection
 from shop import get_products
 
 logger = logging.getLogger(__name__)
@@ -19,11 +23,24 @@ async def main():
     )
     load_dotenv()
     base_url = os.getenv('BASE_URL')
+    tg_token = os.getenv("TGTOKEN")
+    admin_id = os.getenv('TELEGRAM_ADMIN_ID')
+
+    redis_pool = redis.ConnectionPool(
+        host=os.getenv('REDIS_HOST', 'localhost'),
+        port=os.getenv('REDIS_PORT', 6379),
+        retry=Retry(ConstantBackoff(10), 30),
+        retry_on_error=[
+            ConnectionError, TimeoutError, NoPermissionError, ConnectionRefusedError, PermissionError
+        ],
+        socket_timeout=300,
+        socket_connect_timeout=300,
+        health_check_interval=300,
+    )
+    redis_connection = redis.StrictRedis(connection_pool=redis_pool, db=0)
 
     products = get_products(base_url)
 
-    tg_token = os.getenv("TGTOKEN")
-    admin_id = os.getenv('TELEGRAM_ADMIN_ID')
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 

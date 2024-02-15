@@ -12,7 +12,7 @@ class NumbersCallbackFactory(CallbackData, prefix="quantity"):
 
 def get_menu_buttons(products):
     builder = InlineKeyboardBuilder()
-    for key, product in enumerate(products['data']):
+    for product in products['data']:
         builder.button(
             text=product['attributes']['title'],
             callback_data=NumbersCallbackFactory(action="product_id", value=product['id'])
